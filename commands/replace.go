@@ -30,7 +30,7 @@ func Replace(options ReplaceOptions) chan bool {
 func enqueueEvents(client themekit.ThemeClient, filenames []string, events chan themekit.AssetEvent) {
 	root, _ := os.Getwd()
 	if len(filenames) == 0 {
-		go fullReplace(client.AssetListSync(), client.LocalAssets(root), events)
+		go fullReplace(client.AssetListSyncWithFields([]string{themekit.AssetFieldKey}), client.LocalAssets(root), events)
 		return
 	}
 	go func() {

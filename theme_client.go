@@ -17,6 +17,13 @@ import (
 )
 
 const CreateThemeMaxRetries int = 3
+const (
+	AssetFieldKey        = "key"
+	AssetFieldAttachment = "attachment"
+	AssetFieldValue      = "value"
+)
+
+var DefaultAssetListFields = []string{AssetFieldKey, AssetFieldAttachment, AssetFieldValue}
 
 type ThemeClient struct {
 	config Configuration
@@ -87,7 +94,12 @@ func (t ThemeClient) LeakyBucket() *LeakyBucket {
 	return NewLeakyBucket(t.config.BucketSize, t.config.RefillRate, 1)
 }
 
+// Deprecated: Use AssetListWithFields(themekit.DefaultAssetListFields) instead
 func (t ThemeClient) AssetList() (results chan Asset, errs chan error) {
+	return t.AssetListWithFields(DefaultAssetListFields)
+}
+
+func (t ThemeClient) AssetListWithFields(fields []string) (results chan Asset, errs chan error) {
 	results = make(chan Asset)
 	errs = make(chan error)
 	go func() {
@@ -95,7 +107,7 @@ func (t ThemeClient) AssetList() (results chan Asset, errs chan error) {
 			return path
 		}
 
-		resp := t.query(queryBuilder)
+		resp := t.query(fields, queryBuilder)
 		if resp.err != nil {
 			errs <- resp.err
 		}
@@ -119,8 +131,13 @@ func (t ThemeClient) AssetList() (results chan Asset, errs chan error) {
 	return
 }
 
+// Deprecated: Use AssetListSyncWithFields(...fields) instead
 func (t ThemeClient) AssetListSync() []Asset {
-	ch, _ := t.AssetList()
+	return t.AssetListSyncWithFields(DefaultAssetListFields)
+}
+
+func (t ThemeClient) AssetListSyncWithFields(fields []string) []Asset {
+	ch, _ := t.AssetListWithFields(fields)
 	results := []Asset{}
 	for {
 		asset, more := <-ch
@@ -156,7 +173,7 @@ func (t ThemeClient) Asset(filename string) (Asset, error) {
 		return fmt.Sprintf("%s&asset[key]=%s", path, filename)
 	}
 
-	resp := t.query(queryBuilder)
+	resp := t.query(DefaultAssetListFields, queryBuilder)
 	if resp.err != nil {
 		return Asset{}, resp.err
 	}
@@ -253,8 +270,8 @@ func (t ThemeClient) Perform(asset AssetEvent) ThemeEvent {
 	return processResponse(resp, err, asset)
 }
 
-func (t ThemeClient) query(queryBuilder func(path string) string) apiResponse {
-	path := fmt.Sprintf("%s?fields=key,attachment,value", t.config.AssetPath())
+func (t ThemeClient) query(fields []string, queryBuilder func(path string) string) apiResponse {
+	path := fmt.Sprintf("%s?fields=%s", t.config.AssetPath(), strings.Join(fields, ","))
 	path = queryBuilder(path)
 
 	req, err := http.NewRequest("GET", path, nil)
