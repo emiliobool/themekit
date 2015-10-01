@@ -17,6 +17,7 @@ var RedText = color.New(color.FgRed).SprintFunc()
 var YellowText = color.New(color.FgYellow).SprintFunc()
 var BlueText = color.New(color.FgBlue).SprintFunc()
 var GreenText = color.New(color.FgGreen).SprintFunc()
+var WhiteText = color.New(color.FgWhite).SprintFunc()
 
 func TestFixture(name string) string {
 	return string(RawTestFixture(name))

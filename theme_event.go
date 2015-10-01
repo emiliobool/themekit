@@ -40,6 +40,45 @@ func (e NoOpEvent) AsJSON() ([]byte, error) {
 	return []byte{}, errors.New("cannot encode NoOpEvents")
 }
 
+type DebugStatus string
+
+const (
+	DebugStatusInfo  DebugStatus = "Info"
+	DebugStatusError             = "Error"
+)
+
+type DebugEvent struct {
+	Status  DebugStatus
+	Message string
+}
+
+func (e DebugEvent) statusColor() string {
+	switch e.Status {
+	case DebugStatusInfo:
+		return BlueText(e.Status)
+	case DebugStatusError:
+		return RedText(e.Status)
+	default:
+		return WhiteText(e.Status)
+	}
+}
+
+func (e DebugEvent) String() string {
+	return fmt.Sprintf("DEBUG: [%s] %s", e.statusColor(), e.Message)
+}
+
+func (e DebugEvent) Successful() bool {
+	return true
+}
+
+func (e DebugEvent) Error() error {
+	return nil
+}
+
+func (e DebugEvent) AsJSON() ([]byte, error) {
+	return json.Marshal(e)
+}
+
 type APIAssetEvent struct {
 	Host      string `json:"host"`
 	AssetKey  string `json:"asset_key"`

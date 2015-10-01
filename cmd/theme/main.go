@@ -128,7 +128,7 @@ func main() {
 		for {
 			select {
 			case event := <-globalEventLog:
-				if len(event.String()) > 0 {
+				if shouldLogEvent(args["verbose"], event) {
 					output.Write([]byte(fmt.Sprintf("%s\n", event)))
 					output.Flush()
 				}
@@ -153,21 +153,24 @@ func FileManipulationCommandParser(cmd string, args []string) (result map[string
 	result = make(map[string]interface{})
 	currentDir, _ := os.Getwd()
 	var environment, directory string
+	var verbose bool
 
 	set = makeFlagSet(cmd)
 	set.StringVar(&environment, "env", themekit.DefaultEnvironment, "environment to run command")
 	set.StringVar(&directory, "dir", currentDir, "directory that config.yml is located")
+	set.BoolVar(&verbose, "verbose", false, "enable verbose logging")
 	set.Parse(args)
 
 	result["themeClient"] = loadThemeClient(directory, environment)
 	result["filenames"] = args[len(args)-set.NArg():]
+	result["verbose"] = verbose
 	return
 }
 
 func WatchCommandParser(cmd string, args []string) (result map[string]interface{}, set *flag.FlagSet) {
 	result = make(map[string]interface{})
 	currentDir, _ := os.Getwd()
-	var allEnvironments bool
+	var allEnvironments, verbose bool
 	var environment, directory, notifyFile string
 	var environments themekit.Environments
 
@@ -176,6 +179,7 @@ func WatchCommandParser(cmd string, args []string) (result map[string]interface{
 	set.BoolVar(&allEnvironments, "allenvs", false, "start watchers for all environments")
 	set.StringVar(&directory, "dir", currentDir, "directory that config.yml is located")
 	set.StringVar(&notifyFile, "notify", "", "file to touch when workers have gone idle")
+	set.BoolVar(&verbose, "verbose", false, "enable verbose logging")
 	set.Parse(args)
 
 	if len(environment) != 0 && allEnvironments {
@@ -189,6 +193,7 @@ func WatchCommandParser(cmd string, args []string) (result map[string]interface{
 	}
 
 	result["themeClient"] = loadThemeClient(directory, environment)
+	result["verbose"] = verbose
 	return
 }
 
@@ -197,6 +202,7 @@ func ConfigurationCommandParser(cmd string, args []string) (result map[string]in
 	currentDir, _ := os.Getwd()
 	var directory, environment, domain, accessToken string
 	var bucketSize, refillRate int
+	var verbose bool
 
 	set = makeFlagSet(cmd)
 	set.StringVar(&directory, "dir", currentDir, "directory to create config.yml")
@@ -205,6 +211,7 @@ func ConfigurationCommandParser(cmd string, args []string) (result map[string]in
 	set.StringVar(&accessToken, "access_token", "", "accessToken (or password) to make successful API calls")
 	set.IntVar(&bucketSize, "bucketSize", themekit.DefaultBucketSize, "leaky bucket capacity")
 	set.IntVar(&refillRate, "refillRate", themekit.DefaultRefillRate, "leaky bucket refill rate / second")
+	set.BoolVar(&verbose, "verbose", false, "enable verbose logging")
 	set.Parse(args)
 
 	result["directory"] = directory
@@ -213,6 +220,7 @@ func ConfigurationCommandParser(cmd string, args []string) (result map[string]in
 	result["access_token"] = accessToken
 	result["bucket_size"] = bucketSize
 	result["refill_rate"] = refillRate
+	result["verbose"] = verbose
 	return
 }
 
@@ -220,7 +228,7 @@ func BootstrapParser(cmd string, args []string) (result map[string]interface{}, 
 	result = make(map[string]interface{})
 	currentDir, _ := os.Getwd()
 	var version, directory, environment, prefix string
-	var setThemeId bool
+	var setThemeId, verbose bool
 
 	set = makeFlagSet(cmd)
 	set.StringVar(&directory, "dir", currentDir, "location of config.yml")
@@ -228,6 +236,7 @@ func BootstrapParser(cmd string, args []string) (result map[string]interface{}, 
 	set.StringVar(&environment, "env", themekit.DefaultEnvironment, "environment to execute command")
 	set.StringVar(&version, "version", commands.LatestRelease, "version of Shopify Timber to use")
 	set.StringVar(&prefix, "prefix", "", "prefix to the Timber theme being created")
+	set.BoolVar(&verbose, "verbose", false, "enable verbose logging")
 	set.Parse(args)
 
 	result["version"] = version
@@ -236,6 +245,7 @@ func BootstrapParser(cmd string, args []string) (result map[string]interface{}, 
 	result["prefix"] = prefix
 	result["setThemeId"] = setThemeId
 	result["themeClient"] = loadThemeClient(directory, environment)
+	result["verbose"] = verbose
 	return
 }
 
@@ -346,4 +356,12 @@ func handleError(err error) {
 		err = errors.New(fmt.Sprintf("configuration error: %s", err))
 	}
 	themekit.NotifyErrorImmediately(err)
+}
+
+func shouldLogEvent(verbose interface{}, event themekit.ThemeEvent) bool {
+	if _, ok := event.(themekit.DebugEvent); ok {
+		res, ok := verbose.(bool)
+		return res && ok
+	}
+	return len(event.String()) > 0
 }

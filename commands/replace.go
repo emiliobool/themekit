@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/Shopify/themekit"
 	"os"
 )
@@ -23,14 +24,18 @@ func Replace(options ReplaceOptions) chan bool {
 	rawEvents, throttledEvents := prepareChannel(options)
 	done, logs := options.Client.Process(throttledEvents)
 	mergeEvents(options.getEventLog(), []chan themekit.ThemeEvent{logs})
-	enqueueEvents(options.Client, options.Filenames, rawEvents)
+	enqueueEvents(options, rawEvents)
 	return done
 }
 
-func enqueueEvents(client themekit.ThemeClient, filenames []string, events chan themekit.AssetEvent) {
+func enqueueEvents(options ReplaceOptions, events chan themekit.AssetEvent) {
+	client := options.Client
+	filenames := options.Filenames
+
 	root, _ := os.Getwd()
 	if len(filenames) == 0 {
-		go fullReplace(client.AssetListSyncWithFields([]string{themekit.AssetFieldKey}), client.LocalAssets(root), events)
+		logDebug(fmt.Sprintf("Selecting all valid theme files from within '%s'", root), options.EventLog)
+		go fullReplace(client.AssetListSyncWithFields([]string{themekit.AssetFieldKey}), client.LocalAssets(root), events, options)
 		return
 	}
 	go func() {
@@ -44,7 +49,10 @@ func enqueueEvents(client themekit.ThemeClient, filenames []string, events chan 
 	}()
 }
 
-func fullReplace(remoteAssets, localAssets []themekit.Asset, events chan themekit.AssetEvent) {
+func fullReplace(remoteAssets, localAssets []themekit.Asset, events chan themekit.AssetEvent, options ReplaceOptions) {
+	logDebug(fmt.Sprintf("Retrieved %d assets from API: %s", len(remoteAssets), themekit.WhiteText(remoteAssets)), options.EventLog)
+	logDebug(fmt.Sprintf("Retrieved %d files from disk: %s", len(localAssets), themekit.WhiteText(localAssets)), options.EventLog)
+
 	assetsActions := map[string]themekit.AssetEvent{}
 	generateActions := func(assets []themekit.Asset, assetEventFn func(asset themekit.Asset) themekit.SimpleAssetEvent) {
 		for _, asset := range assets {

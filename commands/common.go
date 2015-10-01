@@ -148,6 +148,10 @@ func mergeEvents(dest chan themekit.ThemeEvent, chans []chan themekit.ThemeEvent
 	}()
 }
 
+func logDebug(message string, eventLog chan themekit.ThemeEvent) {
+	logEvent(themekit.DebugEvent{Status: themekit.DebugStatusInfo, Message: fmt.Sprintf("%s", message)}, eventLog)
+}
+
 func logEvent(event themekit.ThemeEvent, eventLog chan themekit.ThemeEvent) {
 	go func() {
 		eventLog <- event

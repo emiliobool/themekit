@@ -17,7 +17,16 @@ type Asset struct {
 }
 
 func (a Asset) String() string {
-	return fmt.Sprintf("key: %s | value: %s | attachment: %s", a.Key, a.Value, a.Attachment)
+	result := fmt.Sprintf("key: %s", a.Key)
+	if len(a.Value) > 0 {
+		result = fmt.Sprintf("%s | value: %d chars", result, len(a.Value))
+	}
+
+	if len(a.Attachment) > 0 {
+		result = fmt.Sprintf("%s | attachment: %d chars", result, len(a.Attachment))
+	}
+
+	return fmt.Sprintf("<%s>", result)
 }
 
 func (a Asset) IsValid() bool {
