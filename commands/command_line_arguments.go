@@ -2,10 +2,20 @@ package commands
 
 import (
 	"flag"
+	"github.com/Shopify/themekit"
 	"os"
 )
 
-const DefaultEnvironment string = "development"
+const DefaultEnvironment string = themekit.DefaultEnvironment
+const DefaultBucketSize int = themekit.DefaultBucketSize
+const DefaultRefillRate int = themekit.DefaultRefillRate
+
+const (
+	directoryKey    string = "directory"
+	environmentKey         = "environment"
+	environmentsKey        = "environments"
+	themeClientKey         = "themeClient"
+)
 
 type flagHandler interface {
 	PrepareFlags(set *flag.FlagSet)
@@ -42,6 +52,7 @@ func (a *argParser) Parse() map[string]interface{} {
 	results := map[string]interface{}{}
 	a.extractDefaultValues(results)
 	a.extractAddtionalValues(results)
+	a.loadThemeClient(results)
 	return results
 }
 
@@ -58,6 +69,13 @@ func (a *argParser) setupAdditionalArgs() {
 	}
 }
 
+func (a *argParser) loadConfigurationValues(results map[string]interface{}) {
+	directory, _ := results[directoryKey].(string)
+	environment, _ := results[environmentKey].(string)
+	results[environmentsKey] = loadEnvironments(directory)
+	results[themeClientKey] = loadThemeClient(directory, environment)
+}
+
 func (a *argParser) extractDefaultValues(results map[string]interface{}) {
 	results["directory"] = a.options.dir
 	results["environment"] = a.options.env
@@ -68,4 +86,54 @@ func (a *argParser) extractAddtionalValues(results map[string]interface{}) {
 	for _, handler := range a.additionalHandlers {
 		handler.ExtractValues(results)
 	}
+}
+
+type watchCommandHandler struct {
+	allEnvs bool
+	notify  string
+}
+
+func (w *watchCommandHandler) PrepareFlags(set *flag.FlagSet) {
+	set.BoolVar(&w.allEnvs, "allenvs", false, "start watchers for all environments")
+	set.StringVar(&w.notify, "notify", "", "file to touch when workers have gone idle")
+}
+
+func (w *watchCommandHandler) ExtractValues(results map[string]interface{}) {
+	results["allenvs"] = w.allEnvs
+	results["notify"] = w.notify
+}
+
+type configureCommandHandler struct {
+	accessToken string
+	domain      string
+	env         string
+	bucketSize  int
+	refillRate  int
+}
+
+func (c *configureCommandHandler) PrepareFlags(set *flag.FlagSet) {
+	set.StringVar(&c.accessToken, "access_token", "", "accessToken (or password) to make successful API calls")
+	set.StringVar(&c.domain, "domain", "", "your shopify domain")
+	set.StringVar(&c.env, "env", DefaultEnvironment, "environment for this configuration")
+	set.IntVar(&c.bucketSize, "bucket_size", DefaultBucketSize, "leaky bucket capacity")
+	set.IntVar(&c.refillRate, "refill_rate", DefaultRefillRate, "leaky bucket refill rate / second")
+}
+
+func (c *configureCommandHandler) ExtractValues(results map[string]interface{}) {
+	results["accessToken"] = c.accessToken
+	results["domain"] = c.domain
+	results["environment"] = c.env
+	results["bucketSize"] = c.bucketSize
+	results["refillRate"] = c.refillRate
+}
+
+type bootstrapCommandHandler struct {
+	prefix  string
+	setId   bool
+	version string
+}
+
+func (b *bootstrapCommandHandler) PrepareFlags(set *flag.FlagSet) {
+	set.StringVar(&b.prefix, "prefix", "", "prefix to the Timber theme being created")
+	set.StringVar(&b.prefix, "version", "latest", "version of Shopify Timber to use")
 }
