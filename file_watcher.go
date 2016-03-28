@@ -3,7 +3,6 @@ package themekit
 import (
 	"encoding/base64"
 	"fmt"
-	"gopkg.in/fsnotify.v1"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/fsnotify.v1"
+
+	"github.com/Shopify/themekit/matcher"
 	"github.com/Shopify/themekit/theme"
 )
 
@@ -53,6 +55,18 @@ func NewFileWatcher(dir string, recur bool, filter EventFilter) (chan AssetEvent
 		return nil, err
 	}
 
+	fileSetBuilder := matcher.NewFileSetBuilder().WithDefaultExcludes().WithExclude("templates/404.liquid").InDir(dir)
+	for _, s := range assetLocations {
+		fileSetBuilder.WithInclude(fmt.Sprintf("%s*", s))
+	}
+
+	fileSet, err := fileSetBuilder.FileSet()
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("fileset: %v\n", fileSet)
+
 	watcher, err := fsnotify.NewWatcher()
 	// TODO: the watcher should be closed at the end!!
 	if err != nil {
@@ -65,7 +79,7 @@ func NewFileWatcher(dir string, recur bool, filter EventFilter) (chan AssetEvent
 		}
 	}
 
-	return convertFsEvents(watcher.Events, filter), nil
+	return convertFsEvents(watcher.Events, filter, fileSet, dir), nil
 }
 
 func findDirectoriesToWatch(start string, recursive bool, ignoreDirectory func(string) bool) ([]string, error) {
@@ -143,7 +157,7 @@ func extractAssetKey(filename string) string {
 	return ""
 }
 
-func convertFsEvents(events chan fsnotify.Event, filter EventFilter) chan AssetEvent {
+func convertFsEvents(events chan fsnotify.Event, filter EventFilter, fileSet matcher.FileSet, dir string) chan AssetEvent {
 	results := make(chan AssetEvent)
 	go func() {
 		duplicateEventTimeout := map[string]int64{}
@@ -152,6 +166,17 @@ func convertFsEvents(events chan fsnotify.Event, filter EventFilter) chan AssetE
 
 			if event.Op == fsnotify.Chmod {
 				continue
+			}
+
+			relativePath, err := filepath.Rel(dir, event.Name)
+			if err != nil {
+				panic(err)
+			}
+			ignore := filter.MatchesFilter(event.Name)
+			include := fileSet.Matches(relativePath)
+
+			if ignore == include {
+				fmt.Printf("ignore: %t, include: %t\n", !ignore, include)
 			}
 
 			// TODO: we should add new directories to the watch list

@@ -7,7 +7,7 @@ all:
 	  godep go build -o build/development/$${subproject} github.com/Shopify/themekit/cmd/$${subproject}; \
   done
 
-install: Build and install the theme binary
+install: ## Build and install the theme binary
 	godep go install github.com/Shopify/themekit/cmd/theme
 
 build:
