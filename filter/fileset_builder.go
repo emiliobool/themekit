@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultExcludes = "*/.DS_Store,*/.AppleDouble,*.swp,*~"
+	DefaultExcludes = "*/.DS_Store,*/.AppleDouble,*.swp,*~,*/.git,*/.gitignore,*/._*,*/Thumbs.db,*/Desktop.ini,*/ehthumbs.db,*/*.lnk"
 )
 
 type FileSetBuilder interface {

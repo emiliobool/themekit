@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmptyPatternSetMatchesNothing(t *testing.T) {
-	ps := NewPatternSet()
+func TestEmptyMatcherSetMatchesNothing(t *testing.T) {
+	ps := NewMatcherSet()
 
 	assert.False(t, ps.Matches("something"))
 }
 
-func TestPatternSetDoesNotMatchIfExcludesMatch(t *testing.T) {
-	ps := NewPatternSet()
+func TestMatcherSetDoesNotMatchIfExcludesMatch(t *testing.T) {
+	ps := NewMatcherSet()
 
 	ps.AddInclude(NewAlwaysMatcher())
 	ps.AddExclude(NewAlwaysMatcher())
@@ -21,8 +21,8 @@ func TestPatternSetDoesNotMatchIfExcludesMatch(t *testing.T) {
 	assert.False(t, ps.Matches("something"))
 }
 
-func TestPatternSetMatchesWhenIncludeAndNoExcludeMatches(t *testing.T) {
-	ps := NewPatternSet()
+func TestMatcherSetMatchesWhenIncludeAndNoExcludeMatches(t *testing.T) {
+	ps := NewMatcherSet()
 
 	ps.AddInclude(NewAlwaysMatcher())
 	ps.AddExclude(NewNeverMatcher())
@@ -30,8 +30,8 @@ func TestPatternSetMatchesWhenIncludeAndNoExcludeMatches(t *testing.T) {
 	assert.True(t, ps.Matches("something"))
 }
 
-func TestPatternSetDoesNotMatchWithoutIncludes(t *testing.T) {
-	ps := NewPatternSet()
+func TestMatcherSetDoesNotMatchWithoutIncludes(t *testing.T) {
+	ps := NewMatcherSet()
 
 	assert.False(t, ps.Matches("something"))
 }

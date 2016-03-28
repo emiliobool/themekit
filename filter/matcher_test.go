@@ -8,11 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test(t *testing.T) {
-	m := Must(NewRegexpMatcher(""))
-	assert.NotNil(t, m)
-}
-
 func TestGlobMatcher(t *testing.T) {
 
 	type td struct {

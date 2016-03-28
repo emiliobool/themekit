@@ -6,14 +6,6 @@ import (
 	glob "github.com/ryanuber/go-glob"
 )
 
-func Must(m Matcher, err error) Matcher {
-	if err != nil {
-		panic(err)
-	}
-
-	return m
-}
-
 type Matchers []Matcher
 
 // Matches returns true if any of the contained matchers match the input

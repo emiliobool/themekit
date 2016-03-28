@@ -1,24 +1,24 @@
 package filter
 
-func NewPatternSet() *PatternSet {
-	return &PatternSet{}
+func NewMatcherSet() *MatcherSet {
+	return &MatcherSet{}
 }
 
-type PatternSet struct {
+type MatcherSet struct {
 	includes, excludes Matchers
 }
 
 // TODO: these don't work because we're on values. ugh.
-func (p *PatternSet) AddInclude(m Matcher) {
+func (p *MatcherSet) AddInclude(m Matcher) {
 	p.includes = append(p.includes, m)
 }
 
-func (p *PatternSet) AddExclude(m Matcher) {
+func (p *MatcherSet) AddExclude(m Matcher) {
 	p.excludes = append(p.excludes, m)
 }
 
 // Matches returns true if no exclude and at least one include match the input
-func (p *PatternSet) Matches(input string) bool {
+func (p *MatcherSet) Matches(input string) bool {
 	if p.excludes.Matches(input) {
 		return false
 	}

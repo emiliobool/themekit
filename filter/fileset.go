@@ -18,7 +18,7 @@ type FileSetSettings struct {
 }
 
 type FileSet struct {
-	PatternSet
+	MatcherSet
 	FileSetSettings
 	dir *os.File
 }
