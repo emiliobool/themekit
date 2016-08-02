@@ -7,23 +7,25 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v1"
 )
 
 // Configuration ... TODO
 type Configuration struct {
-	AccessToken  string   `yaml:"access_token,omitempty"`
-	Password     string   `yaml:"password,omitempty"`
-	ThemeID      int64    `yaml:"theme_id,omitempty"`
-	Domain       string   `yaml:"store"`
-	URL          string   `yaml:"-"`
-	IgnoredFiles []string `yaml:"ignore_files,omitempty"`
-	BucketSize   int      `yaml:"bucket_size"`
-	RefillRate   int      `yaml:"refill_rate"`
-	Concurrency  int      `yaml:"concurrency,omitempty"`
-	Proxy        string   `yaml:"proxy,omitempty"`
-	Ignores      []string `yaml:"ignores,omitempty"`
+	AccessToken  string        `yaml:"access_token,omitempty"`
+	Password     string        `yaml:"password,omitempty"`
+	ThemeID      int64         `yaml:"theme_id,omitempty"`
+	Domain       string        `yaml:"store"`
+	URL          string        `yaml:"-"`
+	IgnoredFiles []string      `yaml:"ignore_files,omitempty"`
+	BucketSize   int           `yaml:"bucket_size"`
+	RefillRate   int           `yaml:"refill_rate"`
+	Concurrency  int           `yaml:"concurrency,omitempty"`
+	Proxy        string        `yaml:"proxy,omitempty"`
+	Ignores      []string      `yaml:"ignores,omitempty"`
+	Timeout      time.Duration `yaml:"timeout,omitempty"`
 }
 
 const (
@@ -33,6 +35,8 @@ const (
 	DefaultRefillRate int = 2
 	// DefaultConcurrency ... TODO
 	DefaultConcurrency int = 2
+	// DefaultTimeout ... TODO
+	DefaultTimeout time.Duration = 10 * time.Second
 )
 
 // LoadConfiguration ... TODO
@@ -54,6 +58,9 @@ func (conf Configuration) Initialize() (Configuration, error) {
 	}
 	if conf.Concurrency <= 0 {
 		conf.Concurrency = DefaultConcurrency
+	}
+	if conf.Timeout <= 0 {
+		conf.Timeout = DefaultTimeout
 	}
 
 	conf.URL = conf.AdminURL()
